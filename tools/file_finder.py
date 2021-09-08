@@ -107,9 +107,9 @@ def find_file(exp_type: str, num: int, date: str, raw=False, cache=True,
         fc = threading.Thread(target=copy_file, args=(file, DUMP_PATH+offline_name))
         fc.start()
         if return_offline:
-            print("Caching...", end="")
+            print("Caching...")
             fc.join()
-            print("Done.", end="")
+            print("Done.")
             file = DUMP_PATH + offline_name
     return file
 
