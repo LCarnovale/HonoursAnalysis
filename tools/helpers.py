@@ -14,8 +14,12 @@ def find_peaks_sp(data, num_peaks):
 
     return pks
 
-def get_rise_falls(_data, thresh):
-    """ Return indexes of rises and falls as two arrays"""
+def get_rise_falls(_data, thresh, must_rise_first=True):
+    """ Return indexes of rises and falls as two arrays.
+
+    If `must_rise_first=True` (default) then any falls before the first rise
+    will be ignored.
+    """
     # print(f"Max in data: {max(_data)}, thresh: {thresh}")
     triggered_points = (_data > thresh).astype(int)
     cross_overs = triggered_points[1:] - triggered_points[:-1]
@@ -24,5 +28,7 @@ def get_rise_falls(_data, thresh):
 
     fall_points = cross_overs < 0
     fall_points = np.flatnonzero(fall_points)
+    if must_rise_first:
+        fall_points = fall_points[fall_points > rise_points[0]]
 
     return rise_points, fall_points
