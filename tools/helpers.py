@@ -32,3 +32,21 @@ def get_rise_falls(_data, thresh, must_rise_first=True):
         fall_points = fall_points[fall_points > rise_points[0]]
 
     return rise_points, fall_points
+
+def get_val_from_file(path, *keys, split=":", out_type=float):
+    file = open(path, 'r')
+    vals = [None for _ in keys]
+    for line in file.readlines():
+        for n, key in enumerate(keys):
+            if key in line:
+                val = line.split(split)[1].strip()
+                try:
+                    val = out_type(val)
+                except ValueError:
+                    pass
+                vals[n] = val
+                break
+    return vals
+                
+
+
