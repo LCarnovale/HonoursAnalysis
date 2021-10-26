@@ -9,23 +9,23 @@ import scipy
 # Simulate PL results from a Rabi measurement
 
 ##### \/ \/ Parameters \/ \/ #####
-RABI_PI_TIME = 800 * u.ns               # nanoseconds
+RABI_PI_TIME = 200 * u.ns               # nanoseconds
 BGRD_B_FIELD = 0.1 * u.mT               # milli-Teslas
 MAX_CONTRAST_PL = 0.9                   # percentage
-PHASE_COHERENCE = 3 * u.us              # Lifetime of coherence of Rabi oscillations 
+PHASE_COHERENCE = 1 * u.us              # Lifetime of coherence of Rabi oscillations 
                                         # (ie decay lifetime of oscillations)
-TIME_RES = 3. * u.ns                    # Time step / Time resolution
+TIME_RES = 3.2 * u.ns                    # Time step / Time resolution
 EXCITE_RISE = 50*u.ns                # Rise time of the excitation pulse
 EXCITE_FALL = 50*u.ns                # Fall time of the excitation pulse
 EXCITE_TIME = 3*u.us                   # Excitation laser duration
-TAU_START = 500 * u.ns
-TAU_END   = 500 * u.ns
+TAU_START = 20 * u.ns
+TAU_END   = 1000 * u.ns
 NUM_POINTS = 60                        # Number of measurements spread between TAU_START and TAU_END
 # MAX_COUNTS = 1000 / u.ms                # counts per millisecond 
 BGRD_COUNTS = 1200 / u.us                 # background counts per millisecond
 
 COUNTS_NOISE = 0.01                     # parts per thousand
-NV_COUNT = 10000                         # Number of NVs to consider. Each one will either be bright or dark.
+NV_COUNT = 1000                       # Number of NVs to consider. Each one will either be bright or dark.
 DARK_PL_PROB = 0.9                      # Probability of PL from the dark state
 BRIGHT_PL_PROB = 0.99                   # Probability of PL from the bright state  
 NV_CYCLE_TIME = 15 * u.ns               # Duration of cycle of NV through ground->excited->ground transitions.
@@ -163,8 +163,12 @@ for tau in tau_vals:
     # Flip if necessary
     # print(f"flip prob: {flip_prob}, flipping {(rand_n < flip_prob).sum()} nvs")
     nvs[rand_n < flip_prob] = FLIP(nvs[rand_n < flip_prob])
+    # Add leading wait time
+    add_signal(get_noise(40*u.ns))
     # Add noise while we drove NVs
     add_signal(get_noise(tau))
+    # Add trailing wait time
+    add_signal(get_noise(40*u.ns))
     # Excite NVs
     nvs, pl = excite(nvs, EXCITE_TIME)
     add_signal(pl, NV_CYCLE_TIME)
