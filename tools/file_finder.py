@@ -13,6 +13,14 @@ class AmbiguousSpecificationError(Exception):
     def __init__(self, *args, **kwargs):
         super(AmbiguousSpecificationError, self).__init__(*args, **kwargs)
 
+class KeyDoesNotExistError(FileNotFoundError):
+    def __init__(self, *args, date_exists=None, n_exists=None, **kwargs):
+        if date_exists and n_exists:
+            raise ValueError("Both key and n can not exist for this exception to be raised.")
+        self.date_exists = date_exists
+        self.n_exists = n_exists
+        super(KeyDoesNotExistError, self).__init__(*args, **kwargs)
+
 def get_offline_name(exp_type, num, date, raw, contains=None):
     return (f"{date}_{exp_type}_{num}" +
         ("_" + contains + "_" if contains else "") +
@@ -20,7 +28,7 @@ def get_offline_name(exp_type, num, date, raw, contains=None):
         
 
 def find_file(exp_type: str, num: int, date: str, raw=False, cache=True, 
-        return_offline=True, contains:str="") -> str:
+        return_offline=True, contains:str="", verbose=True) -> str:
     """ `exp_type`: should be 'ODMR' or 'NV' 
     `num` should be the experiment number.
     `date` should be a string such as '210609' for an experiment done on 9th June 2021.
@@ -29,7 +37,8 @@ def find_file(exp_type: str, num: int, date: str, raw=False, cache=True,
     at `DUMP_PATH`.
     `return_offline`: If True (default) then wait for the file copy to complete, 
         and return the offline address. If caching is disabled and no offline file is
-        found, returns an error.
+        found, returns an error. If False, returns the network path or offline
+        path, whichever is found, with preference for offline.
     """
     regex_search_str = r".*_(\d+)\D.*txt"
     # Try search the offline location.
@@ -54,8 +63,12 @@ def find_file(exp_type: str, num: int, date: str, raw=False, cache=True,
         else:
             file = network_files[0]
     except FileNotFoundError:
-        print("File not in network folder. ", end="")
+        date_exists = False
+        if verbose:
+            print("File not in network folder. ", end="")
         file = False
+    else:
+        date_exists = True
 
     parent_dir = network_loc
     if not file:
@@ -65,7 +78,11 @@ def find_file(exp_type: str, num: int, date: str, raw=False, cache=True,
             try:
                 file_list = os.listdir(p_path)
             except FileNotFoundError:
+                # date_exists = False
                 continue
+            else:
+                date_exists = True
+
             
             file_list = [f for f in file_list if exp_type in f]
             file_list = [f for f in file_list if contains in f]
@@ -85,11 +102,11 @@ def find_file(exp_type: str, num: int, date: str, raw=False, cache=True,
                 parent_dir = p_path
                 break
     if not file:
-        raise FileNotFoundError("Could not find the file matching:\n"
+        raise KeyDoesNotExistError("Could not find the file matching:\n"
             f"date: {date}\n"
             f"type: {exp_type}\n"
             f"num:  {num}\n"
-            f"raw:  {raw}\n")
+            f"raw:  {raw}\n", date_exists=date_exists, n_exists=(False if date_exists else None))
 
     if type(file) == list:
         if len(file) > 1:
@@ -107,9 +124,11 @@ def find_file(exp_type: str, num: int, date: str, raw=False, cache=True,
         fc = threading.Thread(target=copy_file, args=(file, DUMP_PATH+offline_name))
         fc.start()
         if return_offline:
-            print("Caching...")
+            if verbose:
+                print("Caching...")
             fc.join()
-            print("Done.")
+            if verbose:
+                print("Done.")
             file = DUMP_PATH + offline_name
     return file
 

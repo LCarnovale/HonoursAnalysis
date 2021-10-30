@@ -1,3 +1,4 @@
+from datetime import timedelta
 import numpy as np
 
 def find_peaks_sp(data, num_peaks):
@@ -50,3 +51,10 @@ def get_val_from_file(path, *keys, split=":", out_type=float):
                 
 
 
+def date_range(start_date, end_date):
+    """ Return a list of dates between start_date and end_date. """
+    from datetime import datetime
+    start_date = datetime.strptime(start_date, "%Y-%m-%d")
+    end_date = datetime.strptime(end_date, "%Y-%m-%d")
+    delta = end_date - start_date
+    return [start_date + timedelta(days=n) for n in range(delta.days + 1)]
